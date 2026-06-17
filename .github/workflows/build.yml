@@ -43,7 +43,7 @@ jobs:
       run: mkdir build
 
     - name: Configure CMake
-      run: cmake .. -G "Visual Studio 17 2022" -A x64
+      run: cmake .. -G "Visual Studio 16 2019" -A x64
       working-directory: build
 
     - name: Build Release
