@@ -3,14 +3,13 @@
 #include "bakkesmod/plugin/bakkesmodplugin.h"
 
 using namespace std;
-using namespace std::placeholders;
 
 class SpawnMiddle : public BakkesMod::Plugin::BakkesModPlugin
 {
 public:
     void onLoad() override;
     void onUnload() override;
-    void onEvent(const std::string& eventName, void* params);
+    void onEvent(const std::string& eventName);
 };
 
 void SpawnMiddle::onLoad()
@@ -21,8 +20,9 @@ void SpawnMiddle::onLoad()
         "Spawn index: 0=Center,1=Left,2=Right,3=Goal (middle near net)",
         true, true, 0, true, 3);
 
+    // ✅ Correct HookEvent – uses a lambda with the right signature
     gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.OnCarSpawned",
-        bind(&SpawnMiddle::onEvent, this, _1, _2));
+        [this](const std::string& eventName) { onEvent(eventName); });
 
     if (cvarManager->getCvar("spawnmiddle_enabled").getBoolValue())
     {
@@ -37,7 +37,7 @@ void SpawnMiddle::onUnload()
     cvarManager->executeCommand("sv_freeplay_spawn -1");
 }
 
-void SpawnMiddle::onEvent(const std::string& eventName, void* params)
+void SpawnMiddle::onEvent(const std::string& eventName)
 {
     if (!gameWrapper->IsInFreeplay()) return;
     if (!cvarManager->getCvar("spawnmiddle_enabled").getBoolValue()) return;
@@ -46,4 +46,5 @@ void SpawnMiddle::onEvent(const std::string& eventName, void* params)
     cvarManager->executeCommand("sv_freeplay_spawn " + to_string(idx));
 }
 
-BAKKESMOD_PLUGIN(SpawnMiddle, "Spawn in middle (near goal)", "1.0", "YourName")
+// ✅ Version is a numeric constant, NOT a string
+BAKKESMOD_PLUGIN(SpawnMiddle, "Spawn in middle (near goal)", 1, "YourName")
