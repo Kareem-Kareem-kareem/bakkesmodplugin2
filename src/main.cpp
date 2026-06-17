@@ -47,5 +47,5 @@ void SpawnMiddle::onEvent(std::string eventName)
     cvarManager->executeCommand("sv_freeplay_spawn " + std::to_string(idx));
 }
 
-// ✅ CORRECT ORDER: class, version (unsigned long), name (string), author (string)
-BAKKESMOD_PLUGIN(SpawnMiddle, 1UL, "Spawn in middle (near goal)", "YourName")
+// ✅ CORRECT ORDER: class, plugin name (string), version (unsigned long), author (string)
+BAKKESMOD_PLUGIN(SpawnMiddle, "Spawn in middle (near goal)", 1UL, "YourName")
