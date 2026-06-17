@@ -1,33 +1,37 @@
 #include <string>
 #include <functional>
+#include <sstream>   // fallback for to_string (though <string> has it)
 #include "bakkesmod/plugin/bakkesmodplugin.h"
-
-using namespace std;
 
 class SpawnMiddle : public BakkesMod::Plugin::BakkesModPlugin
 {
 public:
     void onLoad() override;
     void onUnload() override;
-    void onEvent(const std::string& eventName);
+    void onEvent(std::string eventName);  // by value to match callback exactly
 };
 
 void SpawnMiddle::onLoad()
 {
+    // Register CVars
     cvarManager->registerCvar("spawnmiddle_enabled", "1",
         "Enable or disable forcing spawn", true, true, 0, true, 1);
     cvarManager->registerCvar("spawnmiddle_spawn_index", "3",
         "Spawn index: 0=Center,1=Left,2=Right,3=Goal (middle near net)",
         true, true, 0, true, 3);
 
-    // ✅ Correct HookEvent – uses a lambda with the right signature
+    // Hook event with explicit std::function and lambda
     gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.OnCarSpawned",
-        [this](const std::string& eventName) { onEvent(eventName); });
+        std::function<void(std::string)>(
+            [this](std::string eventName) { this->onEvent(eventName); }
+        )
+    );
 
+    // Apply initial spawn setting if enabled
     if (cvarManager->getCvar("spawnmiddle_enabled").getBoolValue())
     {
         int idx = cvarManager->getCvar("spawnmiddle_spawn_index").getIntValue();
-        cvarManager->executeCommand("sv_freeplay_spawn " + to_string(idx));
+        cvarManager->executeCommand("sv_freeplay_spawn " + std::to_string(idx));
     }
 }
 
@@ -37,14 +41,14 @@ void SpawnMiddle::onUnload()
     cvarManager->executeCommand("sv_freeplay_spawn -1");
 }
 
-void SpawnMiddle::onEvent(const std::string& eventName)
+void SpawnMiddle::onEvent(std::string eventName)
 {
     if (!gameWrapper->IsInFreeplay()) return;
     if (!cvarManager->getCvar("spawnmiddle_enabled").getBoolValue()) return;
 
     int idx = cvarManager->getCvar("spawnmiddle_spawn_index").getIntValue();
-    cvarManager->executeCommand("sv_freeplay_spawn " + to_string(idx));
+    cvarManager->executeCommand("sv_freeplay_spawn " + std::to_string(idx));
 }
 
-// ✅ Version is a numeric constant, NOT a string
-BAKKESMOD_PLUGIN(SpawnMiddle, "Spawn in middle (near goal)", 1, "YourName")
+// Version = unsigned long literal (1UL)
+BAKKESMOD_PLUGIN(SpawnMiddle, "Spawn in middle (near goal)", 1UL, "YourName")
