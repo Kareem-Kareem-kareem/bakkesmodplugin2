@@ -19,11 +19,68 @@ jobs:
     - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v2
 
-    - name: Download BakkesMod SDK
+    - name: Cache BakkesMod SDK
+      id: cache-sdk
+      uses: actions/cache@v3
+      with:
+        path: C:\bakkesmodsdk
+        key: bakkesmod-sdk
+
+    - name: Download BakkesMod SDK (with retry)
+      if: steps.cache-sdk.outputs.cache-hit != 'true'
       shell: powershell
       run: |
-        Invoke-WebRequest -Uri "https://bakkesmod.com/sdk.zip" -OutFile "sdk.zip"
-        Expand-Archive -Path "sdk.zip" -DestinationPath "C:\bakkesmodsdk"
+        $sdkUrl = "https://bakkesmod.com/sdk.zip"
+        $fallbackUrl = "https://github.com/your-mirror/bakkesmod-sdk/releases/latest/download/sdk.zip"  # Replace with a real mirror if needed
+        $outFile = "sdk.zip"
+        $maxRetries = 3
+        $retryDelay = 5  # seconds
+
+        function Download-SDK {
+          param($url)
+          Write-Host "Attempting to download SDK from $url"
+          try {
+            Invoke-WebRequest -Uri $url -OutFile $outFile -UserAgent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            return $true
+          } catch {
+            Write-Host "Download failed: $_"
+            return $false
+          }
+        }
+
+        $success = $false
+        for ($i=0; $i -lt $maxRetries; $i++) {
+          if (Download-SDK $sdkUrl) {
+            $success = $true
+            break
+          }
+          Write-Host "Retry $($i+1)/$maxRetries in $retryDelay seconds..."
+          Start-Sleep -Seconds $retryDelay
+        }
+
+        if (-not $success) {
+          Write-Host "Primary URL failed. Trying fallback mirror..."
+          if (Download-SDK $fallbackUrl) {
+            $success = $true
+          }
+        }
+
+        if (-not $success) {
+          Write-Error "Could not download SDK from any source."
+          exit 1
+        }
+
+        # Extract SDK
+        Expand-Archive -Path $outFile -DestinationPath "C:\bakkesmodsdk" -Force
+        Remove-Item $outFile
+
+        # Set environment variable
+        echo "BAKKESMOD_SDK=C:\bakkesmodsdk" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+    - name: Set SDK env (if cached)
+      if: steps.cache-sdk.outputs.cache-hit == 'true'
+      shell: powershell
+      run: |
         echo "BAKKESMOD_SDK=C:\bakkesmodsdk" | Out-File -FilePath $env:GITHUB_ENV -Append
 
     - name: Create Build Directory
