@@ -19,6 +19,11 @@ jobs:
     - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v2
 
+    - name: Setup Visual Studio environment
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+
     - name: Cache BakkesMod SDK
       id: cache-sdk
       uses: actions/cache@v3
@@ -43,7 +48,7 @@ jobs:
       run: mkdir build
 
     - name: Configure CMake
-      run: cmake .. -G "Visual Studio 16 2019" -A x64
+      run: cmake .. -G "Visual Studio 17 2022" -A x64
       working-directory: build
 
     - name: Build Release
