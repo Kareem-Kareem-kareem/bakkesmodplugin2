@@ -3,7 +3,7 @@ project(SpawnMiddle)
 
 set(CMAKE_CXX_STANDARD 17)
 
-# Get SDK path from environment variable
+# Read SDK path from environment variable
 set(BAKKESMOD_SDK $ENV{BAKKESMOD_SDK})
 
 # Fallback for local builds
