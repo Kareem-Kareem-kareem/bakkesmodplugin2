@@ -1,2 +1,1 @@
-spawnmiddle_enabled=1
-spawnmiddle_spawn_index=3
+greeter_message=Hello from the config file!
