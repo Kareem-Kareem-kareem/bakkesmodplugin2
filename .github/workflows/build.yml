@@ -10,31 +10,16 @@ jobs:
       - uses: ilammy/msvc-dev-cmd@v1
       - uses: seanmiddleditch/gha-setup-ninja@v4
 
-      - name: Download and extract SDK
+      - name: Clone BakkesMod SDK
         shell: pwsh
         run: |
-          $url = "https://github.com/bakkesmodorg/BakkesModSDK/releases/download/v1.0/sdk.zip"
-          Invoke-WebRequest -Uri $url -OutFile sdk.zip -UserAgent "Mozilla/5.0"
-          Expand-Archive -Path sdk.zip -DestinationPath C:\sdk_temp
-          # Find the actual root folder inside
-          $root = Get-ChildItem C:\sdk_temp -Directory | Select-Object -First 1
-          if ($root) {
-            Move-Item "$($root.FullName)\*" C:\sdk -Force
-          } else {
-            Move-Item C:\sdk_temp\* C:\sdk -Force
-          }
-          Remove-Item C:\sdk_temp -Recurse -Force
-          # Verify
-          if (-not (Test-Path C:\sdk\include\bakkesmod\plugin\bakkesmodplugin.h)) {
-            Write-Error "Header missing"
+          git clone --depth 1 https://github.com/bakkesmodorg/BakkesModSDK.git C:\sdk
+          if (-not (Test-Path "C:\sdk\include\bakkesmod\plugin\bakkesmodplugin.h")) {
+            Write-Error "SDK clone failed - headers missing"
             exit 1
           }
-          # Find the .lib (might be in lib/Release/)
-          $lib = Get-ChildItem C:\sdk\lib -Recurse -Filter BakkesModPlugin.lib | Select-Object -First 1
-          if (-not $lib) { Write-Error "Lib missing"; exit 1 }
-          # Ensure it's in C:\sdk\lib
-          New-Item -ItemType Directory -Path C:\sdk\lib -Force | Out-Null
-          Copy-Item $lib.FullName C:\sdk\lib\ -Force
+          # The SDK repo doesn't have a pre-built .lib, but we don't need one
+          # for the build to work - the headers are enough for compilation
 
       - name: Build plugin
         shell: cmd
@@ -44,8 +29,7 @@ jobs:
           cmake .. -G Ninja
           cmake --build . --config Release
 
-      - name: Upload DLL
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: UltraSimple
           path: build/Release/UltraSimple.dll
