@@ -24,39 +24,27 @@ jobs:
     - name: Setup Ninja
       uses: seanmiddleditch/gha-setup-ninja@v4
 
-    - name: Cache BakkesMod SDK
+    - name: Cache BakkesMod SDK (built)
       id: cache-sdk
       uses: actions/cache@v3
       with:
         path: C:\bakkesmodsdk
-        key: bakkesmod-sdk-v1
+        key: bakkesmod-sdk-built
 
-    - name: Download BakkesMod SDK (direct link from bakkesmod.com)
+    - name: Clone and build BakkesMod SDK
       if: steps.cache-sdk.outputs.cache-hit != 'true'
       shell: powershell
       run: |
-        # Try the official download (might fail, but fallback to a known working mirror)
-        $urls = @(
-          "https://bakkesmod.com/sdk.zip",
-          "https://github.com/bakkesmodorg/BakkesModSDK/releases/download/v1.0/sdk.zip"
-        )
-        $downloaded = $false
-        foreach ($url in $urls) {
-          try {
-            Write-Host "Trying $url"
-            Invoke-WebRequest -Uri $url -OutFile sdk.zip -UserAgent "Mozilla/5.0"
-            $downloaded = $true
-            break
-          } catch {
-            Write-Host "Failed: $_"
-          }
-        }
-        if (-not $downloaded) {
-          Write-Error "All download attempts failed."
-          exit 1
-        }
-        Expand-Archive -Path sdk.zip -DestinationPath C:\bakkesmodsdk -Force
-        Remove-Item sdk.zip
+        git clone --depth 1 https://github.com/bakkesmodorg/BakkesModSDK.git C:\bakkesmodsdk
+        cd C:\bakkesmodsdk
+        mkdir build
+        cd build
+        cmake .. -G Ninja
+        cmake --build . --config Release
+        # The library will be in build/Release/BakkesModPlugin.lib
+        # Copy it to a standard location so CMake can find it
+        mkdir C:\bakkesmodsdk\lib
+        copy Release\BakkesModPlugin.lib C:\bakkesmodsdk\lib\
 
     - name: Set SDK env (always)
       shell: powershell
