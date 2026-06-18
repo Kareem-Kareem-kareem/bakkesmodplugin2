@@ -1,35 +1,71 @@
-cmake_minimum_required(VERSION 3.10)
-project(SpawnMiddle)
+#include <string>
+#include <functional>
+#include <sstream>
+#include "bakkesmod/plugin/bakkesmodplugin.h"
 
-set(CMAKE_CXX_STANDARD 17)
+class SpawnMiddle : public BakkesMod::Plugin::BakkesModPlugin
+{
+public:
+    void onLoad() override;
+    void onUnload() override;
+    void onEvent(std::string eventName);
+};
 
-# Get SDK path from environment
-set(BAKKESMOD_SDK $ENV{BAKKESMOD_SDK})
-if(NOT BAKKESMOD_SDK)
-    set(BAKKESMOD_SDK "C:/path/to/bakkesmodsdk")
-endif()
-message(STATUS "Using BakkesMod SDK at: ${BAKKESMOD_SDK}")
+void SpawnMiddle::onLoad()
+{
+    cvarManager->registerCvar("spawnmiddle_enabled", "1",
+        "Enable or disable forcing spawn", true, true, 0, true, 1);
+    cvarManager->registerCvar("spawnmiddle_spawn_index", "3",
+        "Spawn index: 0=Center,1=Left,2=Right,3=Goal (middle near net)",
+        true, true, 0, true, 3);
 
-include_directories(${BAKKESMOD_SDK}/include)
+    gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.OnCarSpawned",
+        std::function<void(std::string)>(
+            [this](std::string eventName) { this->onEvent(eventName); }
+        )
+    );
 
-# Search for BakkesModPlugin.lib in common locations
-find_library(BAKKESMOD_PLUGIN_LIB
-    NAMES BakkesModPlugin
-    PATHS
-        ${BAKKESMOD_SDK}/lib
-        ${BAKKESMOD_SDK}/lib/Release
-        ${BAKKESMOD_SDK}/lib/x64/Release
-        ${BAKKESMOD_SDK}/lib/Debug
-        ${BAKKESMOD_SDK}/lib/x64/Debug
-    NO_DEFAULT_PATH
-)
+    if (cvarManager->getCvar("spawnmiddle_enabled").getBoolValue())
+    {
+        int idx = cvarManager->getCvar("spawnmiddle_spawn_index").getIntValue();
+        cvarManager->executeCommand("sv_freeplay_spawn " + std::to_string(idx));
+    }
+}
 
-if(NOT BAKKESMOD_PLUGIN_LIB)
-    message(FATAL_ERROR "Could not find BakkesModPlugin.lib in ${BAKKESMOD_SDK}/lib")
-endif()
+void SpawnMiddle::onUnload()
+{
+    gameWrapper->UnhookEvent("Function TAGame.GameEvent_Soccar_TA.OnCarSpawned");
+    cvarManager->executeCommand("sv_freeplay_spawn -1");
+}
 
-message(STATUS "Found BakkesModPlugin.lib at: ${BAKKESMOD_PLUGIN_LIB}")
+void SpawnMiddle::onEvent(std::string eventName)
+{
+    if (!gameWrapper->IsInFreeplay()) return;
+    if (!cvarManager->getCvar("spawnmiddle_enabled").getBoolValue()) return;
 
-add_library(SpawnMiddle SHARED src/main.cpp)
-target_link_libraries(SpawnMiddle ${BAKKESMOD_PLUGIN_LIB})
-set_target_properties(SpawnMiddle PROPERTIES PREFIX "" SUFFIX ".dll")
+    int idx = cvarManager->getCvar("spawnmiddle_spawn_index").getIntValue();
+    cvarManager->executeCommand("sv_freeplay_spawn " + std::to_string(idx));
+}
+
+// =====================================================================
+// Manual exports – no macro, no guesswork.
+// =====================================================================
+extern "C" __declspec(dllexport) BakkesMod::Plugin::BakkesModPlugin* CreatePlugin()
+{
+    return new SpawnMiddle();
+}
+
+extern "C" __declspec(dllexport) const char* GetPluginName()
+{
+    return "Spawn in middle (near goal)";
+}
+
+extern "C" __declspec(dllexport) unsigned long GetPluginVersion()
+{
+    return 1UL;
+}
+
+extern "C" __declspec(dllexport) const char* GetPluginAuthor()
+{
+    return "YourName";
+}
