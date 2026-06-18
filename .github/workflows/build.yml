@@ -16,7 +16,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Visual Studio environment
+      - name: Setup Visual Studio
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
@@ -24,22 +24,17 @@ jobs:
       - name: Setup Ninja
         uses: seanmiddleditch/gha-setup-ninja@v4
 
-      - name: Clone and build BakkesMod SDK (source)
-        shell: cmd
+      - name: Download SDK (official release)
+        shell: powershell
         run: |
-          git clone --depth 1 https://github.com/bakkesmodorg/BakkesModSDK.git C:\sdk
-          cd C:\sdk
-          mkdir build
-          cd build
-          cmake .. -G Ninja
-          cmake --build . --config Release
-          :: Copy the .lib to a known location
-          mkdir C:\sdk\lib
-          copy Release\BakkesModPlugin.lib C:\sdk\lib\
+          $url = "https://github.com/bakkesmodorg/BakkesModSDK/releases/download/v1.0/sdk.zip"
+          Invoke-WebRequest -Uri $url -OutFile sdk.zip -UserAgent "Mozilla/5.0"
+          Expand-Archive -Path sdk.zip -DestinationPath C:\sdk -Force
+          Remove-Item sdk.zip
 
-      - name: Set SDK environment variable
-        shell: cmd
-        run: echo BAKKESMOD_SDK=C:\sdk>>%GITHUB_ENV%
+      - name: Set SDK environment
+        shell: powershell
+        run: echo "BAKKESMOD_SDK=C:\sdk" >> $env:GITHUB_ENV
 
       - name: Build plugin
         shell: cmd
