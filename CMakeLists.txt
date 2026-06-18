@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 set(BAKKESMOD_SDK $ENV{BAKKESMOD_SDK})
 if(NOT BAKKESMOD_SDK)
-    set(BAKKESMOD_SDK "C:/bakkesmodsdk")
+    set(BAKKESMOD_SDK "C:/sdk")
 endif()
 message(STATUS "Using BakkesMod SDK at: ${BAKKESMOD_SDK}")
 
