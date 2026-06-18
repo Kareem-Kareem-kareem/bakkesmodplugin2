@@ -29,17 +29,26 @@ jobs:
       uses: actions/cache@v3
       with:
         path: C:\bakkesmodsdk
-        key: bakkesmod-sdk-clone
+        key: bakkesmod-sdk-release
 
-    - name: Clone BakkesMod SDK from GitHub
+    - name: Download BakkesMod SDK (latest release)
       if: steps.cache-sdk.outputs.cache-hit != 'true'
       shell: powershell
       run: |
-        git clone --depth 1 https://github.com/bakkesmodorg/BakkesModSDK.git C:\bakkesmodsdk
-        echo "BAKKESMOD_SDK=C:\bakkesmodsdk" | Out-File -FilePath $env:GITHUB_ENV -Append
+        # Get the latest release download URL for sdk.zip
+        $release = Invoke-RestMethod -Uri "https://api.github.com/repos/bakkesmodorg/BakkesModSDK/releases/latest"
+        $asset = $release.assets | Where-Object { $_.name -eq "sdk.zip" }
+        if (-not $asset) {
+          Write-Error "sdk.zip not found in the latest release."
+          exit 1
+        }
+        $url = $asset.browser_download_url
+        Write-Host "Downloading SDK from $url"
+        Invoke-WebRequest -Uri $url -OutFile sdk.zip -UserAgent "Mozilla/5.0"
+        Expand-Archive -Path sdk.zip -DestinationPath C:\bakkesmodsdk -Force
+        Remove-Item sdk.zip
 
-    - name: Set SDK env (if cached)
-      if: steps.cache-sdk.outputs.cache-hit == 'true'
+    - name: Set SDK env (always)
       shell: powershell
       run: |
         echo "BAKKESMOD_SDK=C:\bakkesmodsdk" | Out-File -FilePath $env:GITHUB_ENV -Append
