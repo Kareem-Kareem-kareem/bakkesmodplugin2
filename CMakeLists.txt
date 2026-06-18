@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(SpawnMiddle)
+project(SimpleGreeter)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -12,6 +12,6 @@ message(STATUS "Using BakkesMod SDK at: ${BAKKESMOD_SDK}")
 include_directories(${BAKKESMOD_SDK}/include)
 link_directories(${BAKKESMOD_SDK}/lib)
 
-add_library(SpawnMiddle SHARED src/main.cpp)
-target_link_libraries(SpawnMiddle BakkesModPlugin)
-set_target_properties(SpawnMiddle PROPERTIES PREFIX "" SUFFIX ".dll")
+add_library(SimpleGreeter SHARED src/main.cpp)
+target_link_libraries(SimpleGreeter BakkesModPlugin)
+set_target_properties(SimpleGreeter PROPERTIES PREFIX "" SUFFIX ".dll")
