@@ -10,18 +10,17 @@ jobs:
       - uses: ilammy/msvc-dev-cmd@v1
       - uses: seanmiddleditch/gha-setup-ninja@v4
 
-      - name: Clone and build BakkesMod SDK
+      - name: Download and extract official SDK
         shell: cmd
         run: |
-          git clone --depth 1 https://github.com/bakkesmodorg/BakkesModSDK.git C:\sdk
-          cd C:\sdk
-          mkdir build
-          cd build
-          cmake .. -G Ninja
-          cmake --build . --config Release
-          :: The .lib is built here – copy it to a standard location
-          if not exist C:\sdk\lib mkdir C:\sdk\lib
-          copy Release\BakkesModPlugin.lib C:\sdk\lib\
+          powershell -Command "Invoke-WebRequest -Uri https://bakkesmod.com/sdk.zip -OutFile sdk.zip -UserAgent 'Mozilla/5.0'"
+          powershell -Command "Expand-Archive sdk.zip -DestinationPath C:\sdk_temp"
+          :: Move contents out of any subfolder
+          if exist C:\sdk_temp\* ( move C:\sdk_temp\* C:\sdk )
+          rmdir /s /q C:\sdk_temp
+          :: Verify header and lib
+          if not exist C:\sdk\include\bakkesmod\plugin\bakkesmodplugin.h exit /b 1
+          if not exist C:\sdk\lib\BakkesModPlugin.lib exit /b 1
 
       - name: Build plugin
         shell: cmd
