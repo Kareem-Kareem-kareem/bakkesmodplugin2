@@ -1,59 +1,39 @@
-# Remove any stale SDK folder
-if (Test-Path C:\sdk) { Remove-Item -Recurse -Force C:\sdk }
-
-# Download the official SDK zip from the latest release
+# Download SDK zip from GitHub release
 $url = "https://github.com/bakkesmodorg/BakkesModSDK/releases/download/v1.0/sdk.zip"
-$zip = "sdk.zip"
-Write-Host "Downloading SDK from $url"
-Invoke-WebRequest -Uri $url -OutFile $zip -UserAgent "Mozilla/5.0"
+Invoke-WebRequest -Uri $url -OutFile sdk.zip -UserAgent "Mozilla/5.0"
 
-# Extract to C:\sdk
-Write-Host "Extracting to C:\sdk"
-Expand-Archive -Path $zip -DestinationPath C:\sdk -Force
-Remove-Item $zip
+# Extract – it creates a folder like BakkesModSDK-1.0
+Expand-Archive sdk.zip -DestinationPath C:\
 
-# Check if the files are in a subfolder (e.g., "BakkesModSDK-...")
-$subfolders = Get-ChildItem C:\sdk -Directory
-if ($subfolders.Count -eq 1 -and (Test-Path "C:\sdk\$($subfolders[0].Name)\include\bakkesmod\plugin\bakkesmodplugin.h")) {
-    # Move everything up one level
-    Write-Host "Moving files from subfolder to root..."
-    $temp = "C:\sdk_temp"
-    Move-Item C:\sdk\* $temp -Force
-    Remove-Item C:\sdk -Force
-    Move-Item $temp C:\sdk -Force
+# Find that folder and move contents to C:\sdk
+$src = Get-ChildItem C:\ -Directory | Where-Object Name -match "BakkesModSDK" | Select-Object -First 1
+if ($src) {
+    Move-Item "$($src.FullName)\*" C:\sdk -Force
+    Remove-Item $src.FullName -Force
+} else {
+    # If it extracted directly, ensure we have C:\sdk
+    if (-not (Test-Path C:\sdk)) { New-Item -ItemType Directory C:\sdk -Force }
 }
 
-# Verify the header exists
+# Verify headers
 $header = "C:\sdk\include\bakkesmod\plugin\bakkesmodplugin.h"
-if (-not (Test-Path $header)) {
-    Write-Error "Header not found at $header – extraction failed."
-    exit 1
-}
+if (-not (Test-Path $header)) { Write-Error "Header missing"; exit 1 }
 
-# Verify the lib exists
-$lib = "C:\sdk\lib\BakkesModPlugin.lib"
-if (-not (Test-Path $lib)) {
-    # Try alternate location
-    $lib = "C:\sdk\lib\Release\BakkesModPlugin.lib"
-    if (-not (Test-Path $lib)) {
-        Write-Error "BakkesModPlugin.lib not found."
-        exit 1
-    }
-    # Copy it to the expected location
-    Copy-Item $lib C:\sdk\lib\ -Force
-}
+# Find BakkesModPlugin.lib (could be in subfolders)
+$lib = Get-ChildItem C:\sdk\lib -Recurse -Filter BakkesModPlugin.lib | Select-Object -First 1
+if (-not $lib) { Write-Error "Lib missing"; exit 1 }
+New-Item -ItemType Directory -Path C:\sdk\lib -Force | Out-Null
+Copy-Item $lib.FullName C:\sdk\lib\ -Force
 
-# Set environment variable for CMake
+# Set env for CMake
 $env:BAKKESMOD_SDK = "C:\sdk"
 
 # Build the plugin
-Write-Host "Building plugin..."
 New-Item -ItemType Directory -Path build -Force | Out-Null
 Push-Location build
 cmake .. -G Ninja
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+if ($LASTEXITCODE) { exit $LASTEXITCODE }
 cmake --build . --config Release
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+if ($LASTEXITCODE) { exit $LASTEXITCODE }
 Pop-Location
-
-Write-Host "Build succeeded! DLL is in build/Release/"
+Write-Host "✅ Build complete"
