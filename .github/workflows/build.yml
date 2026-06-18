@@ -24,43 +24,33 @@ jobs:
     - name: Setup Ninja
       uses: seanmiddleditch/gha-setup-ninja@v4
 
-    - name: Cache BakkesMod SDK (built)
-      id: cache-sdk
-      uses: actions/cache@v3
-      with:
-        path: C:\bakkesmodsdk
-        key: bakkesmod-sdk-built
-
     - name: Clone and build BakkesMod SDK
-      if: steps.cache-sdk.outputs.cache-hit != 'true'
       shell: powershell
       run: |
+        # Remove any old SDK folder to avoid conflicts
+        if (Test-Path C:\bakkesmodsdk) { Remove-Item -Recurse -Force C:\bakkesmodsdk }
         git clone --depth 1 https://github.com/bakkesmodorg/BakkesModSDK.git C:\bakkesmodsdk
         cd C:\bakkesmodsdk
         mkdir build
         cd build
         cmake .. -G Ninja
         cmake --build . --config Release
-        # The library will be in build/Release/BakkesModPlugin.lib
-        # Copy it to a standard location so CMake can find it
-        mkdir C:\bakkesmodsdk\lib
+        # Copy the resulting .lib to a known location
+        mkdir C:\bakkesmodsdk\lib -ErrorAction SilentlyContinue
         copy Release\BakkesModPlugin.lib C:\bakkesmodsdk\lib\
 
-    - name: Set SDK env (always)
+    - name: Set SDK env
       shell: powershell
       run: |
         echo "BAKKESMOD_SDK=C:\bakkesmodsdk" | Out-File -FilePath $env:GITHUB_ENV -Append
 
-    - name: Create Build Directory
-      run: mkdir build
-
-    - name: Configure CMake
-      run: cmake .. -G Ninja
-      working-directory: build
-
-    - name: Build Release
-      run: cmake --build . --config Release
-      working-directory: build
+    - name: Build plugin
+      run: |
+        mkdir build
+        cd build
+        cmake .. -G Ninja
+        cmake --build . --config Release
+      working-directory: ${{ github.workspace }}
 
     - name: Upload Artifact (DLL)
       uses: actions/upload-artifact@v4
