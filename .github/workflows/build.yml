@@ -1,36 +1,43 @@
-name: Build
+name: Build Plugin
 
 on: [push, pull_request]
 
 jobs:
   build:
     runs-on: windows-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: ilammy/msvc-dev-cmd@v1
-      - uses: seanmiddleditch/gha-setup-ninja@v4
+      - name: Checkout your plugin
+        uses: actions/checkout@v4
 
-      - name: Download and extract official SDK
+      - name: Setup Visual Studio
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Setup Ninja
+        uses: seanmiddleditch/gha-setup-ninja@v4
+
+      - name: Clone and build BakkesMod SDK
         shell: cmd
         run: |
-          powershell -Command "Invoke-WebRequest -Uri https://bakkesmod.com/sdk.zip -OutFile sdk.zip -UserAgent 'Mozilla/5.0'"
-          powershell -Command "Expand-Archive sdk.zip -DestinationPath C:\sdk_temp"
-          :: Move contents out of any subfolder
-          if exist C:\sdk_temp\* ( move C:\sdk_temp\* C:\sdk )
-          rmdir /s /q C:\sdk_temp
-          :: Verify header and lib
-          if not exist C:\sdk\include\bakkesmod\plugin\bakkesmodplugin.h exit /b 1
-          if not exist C:\sdk\lib\BakkesModPlugin.lib exit /b 1
-
-      - name: Build plugin
-        shell: cmd
-        run: |
+          git clone --depth 1 https://github.com/bakkesmodorg/BakkesModSDK.git C:\sdk
+          cd C:\sdk
           mkdir build
           cd build
           cmake .. -G Ninja
           cmake --build . --config Release
 
-      - uses: actions/upload-artifact@v4
+      - name: Build your plugin
+        shell: cmd
+        run: |
+          mkdir build
+          cd build
+          cmake .. -G Ninja -DBAKKESMOD_SDK=C:/sdk
+          cmake --build . --config Release
+
+      - name: Upload DLL
+        uses: actions/upload-artifact@v4
         with:
           name: UltraSimple
           path: build/Release/UltraSimple.dll
