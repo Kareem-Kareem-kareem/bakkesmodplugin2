@@ -10,7 +10,7 @@ public:
         cvarManager->registerCvar("greeter_message", "Hello from BakkesMod!",
             "The message printed by the 'greet' command");
 
-        cvarManager->registerCommand("greet", "Prints the greeting message",
+        cvarManager->registerCommand("greet", "Prints the greeting",
             [this](const std::vector<std::string>&) {
                 std::string msg = cvarManager->getCvar("greeter_message").getStringValue();
                 cvarManager->log("GREETER: " + msg);
