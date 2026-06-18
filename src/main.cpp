@@ -47,4 +47,25 @@ void SpawnMiddle::onEvent(std::string eventName)
     cvarManager->executeCommand("sv_freeplay_spawn " + std::to_string(idx));
 }
 
-BAKKESMOD_PLUGIN(SpawnMiddle, "Spawn in middle (near goal)", 1UL, "YourName")
+// =====================================================================
+// Manual exports – no macro, no guesswork.
+// =====================================================================
+extern "C" __declspec(dllexport) BakkesMod::Plugin::BakkesModPlugin* CreatePlugin()
+{
+    return new SpawnMiddle();
+}
+
+extern "C" __declspec(dllexport) const char* GetPluginName()
+{
+    return "Spawn in middle (near goal)";
+}
+
+extern "C" __declspec(dllexport) unsigned long GetPluginVersion()
+{
+    return 1UL;
+}
+
+extern "C" __declspec(dllexport) const char* GetPluginAuthor()
+{
+    return "YourName";
+}
