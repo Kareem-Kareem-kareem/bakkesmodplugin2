@@ -5,12 +5,13 @@ set(CMAKE_CXX_STANDARD 17)
 
 set(BAKKESMOD_SDK $ENV{BAKKESMOD_SDK})
 if(NOT BAKKESMOD_SDK)
-    set(BAKKESMOD_SDK "C:/path/to/bakkesmodsdk")
+    set(BAKKESMOD_SDK "C:/bakkesmodsdk")
 endif()
 message(STATUS "Using BakkesMod SDK at: ${BAKKESMOD_SDK}")
 
 include_directories(${BAKKESMOD_SDK}/include)
 
+# Search for BakkesModPlugin.lib in all possible locations
 find_library(BAKKESMOD_PLUGIN_LIB
     NAMES BakkesModPlugin
     PATHS
@@ -19,11 +20,15 @@ find_library(BAKKESMOD_PLUGIN_LIB
         ${BAKKESMOD_SDK}/lib/x64/Release
         ${BAKKESMOD_SDK}/lib/Debug
         ${BAKKESMOD_SDK}/lib/x64/Debug
+        ${BAKKESMOD_SDK}/lib/VS2022
+        ${BAKKESMOD_SDK}/lib/VS2019
+        ${BAKKESMOD_SDK}/build/Release
+        ${BAKKESMOD_SDK}/build
     NO_DEFAULT_PATH
 )
 
 if(NOT BAKKESMOD_PLUGIN_LIB)
-    message(FATAL_ERROR "Could not find BakkesModPlugin.lib in ${BAKKESMOD_SDK}/lib")
+    message(FATAL_ERROR "Could not find BakkesModPlugin.lib. Checked: ${BAKKESMOD_SDK}/lib")
 endif()
 
 message(STATUS "Found BakkesModPlugin.lib at: ${BAKKESMOD_PLUGIN_LIB}")
