@@ -36,7 +36,9 @@ jobs:
       shell: powershell
       run: |
         # Clean slate
-        if (Test-Path C:\bakkesmodsdk) { Remove-Item -Recurse -Force C:\bakkesmodsdk }
+        if (Test-Path C:\bakkesmodsdk) {
+          Remove-Item -Recurse -Force C:\bakkesmodsdk
+        }
         Write-Host "Cloning SDK..."
         git clone --depth 1 https://github.com/bakkesmodorg/BakkesModSDK.git C:\bakkesmodsdk
         if (-not (Test-Path C:\bakkesmodsdk\CMakeLists.txt)) {
@@ -44,19 +46,23 @@ jobs:
           exit 1
         }
         Write-Host "Building SDK..."
-        mkdir C:\bakkesmodsdk\build -ErrorAction SilentlyContinue
-        cd C:\bakkesmodsdk\build
+        New-Item -ItemType Directory -Path C:\bakkesmodsdk\build -Force | Out-Null
+        Set-Location C:\bakkesmodsdk\build
         cmake .. -G Ninja
-        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        if ($LASTEXITCODE -ne 0) {
+          exit $LASTEXITCODE
+        }
         cmake --build . --config Release
-        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        if ($LASTEXITCODE -ne 0) {
+          exit $LASTEXITCODE
+        }
         # Copy the .lib to a predictable location
         $libSource = "C:\bakkesmodsdk\build\Release\BakkesModPlugin.lib"
         if (-not (Test-Path $libSource)) {
           Write-Error "BakkesModPlugin.lib not built at $libSource"
           exit 1
         }
-        mkdir C:\bakkesmodsdk\lib -ErrorAction SilentlyContinue
+        New-Item -ItemType Directory -Path C:\bakkesmodsdk\lib -Force | Out-Null
         Copy-Item $libSource C:\bakkesmodsdk\lib\ -Force
         Write-Host "SDK built successfully."
 
@@ -83,12 +89,16 @@ jobs:
     - name: Build plugin
       shell: powershell
       run: |
-        mkdir build -ErrorAction SilentlyContinue
-        cd build
+        New-Item -ItemType Directory -Path build -Force | Out-Null
+        Set-Location build
         cmake .. -G Ninja
-        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        if ($LASTEXITCODE -ne 0) {
+          exit $LASTEXITCODE
+        }
         cmake --build . --config Release
-        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        if ($LASTEXITCODE -ne 0) {
+          exit $LASTEXITCODE
+        }
 
     - name: Upload Artifact (DLL)
       uses: actions/upload-artifact@v4
