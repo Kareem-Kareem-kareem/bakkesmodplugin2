@@ -31,40 +31,22 @@ jobs:
         path: C:\bakkesmodsdk
         key: bakkesmod-sdk-v2-${{ runner.os }}
 
-    - name: Build BakkesMod SDK from source
+    - name: Build BakkesMod SDK from source (cmd)
       if: steps.cache-sdk.outputs.cache-hit != 'true'
-      shell: powershell
+      shell: cmd
       run: |
-        # Clean slate
-        if (Test-Path C:\bakkesmodsdk) {
-          Remove-Item -Recurse -Force C:\bakkesmodsdk
-        }
-        Write-Host "Cloning SDK..."
+        if exist C:\bakkesmodsdk rmdir /s /q C:\bakkesmodsdk
         git clone --depth 1 https://github.com/bakkesmodorg/BakkesModSDK.git C:\bakkesmodsdk
-        if (-not (Test-Path C:\bakkesmodsdk\CMakeLists.txt)) {
-          Write-Error "Clone failed – CMakeLists.txt not found in root."
-          exit 1
-        }
-        Write-Host "Building SDK..."
-        New-Item -ItemType Directory -Path C:\bakkesmodsdk\build -Force | Out-Null
-        Set-Location C:\bakkesmodsdk\build
+        if not exist C:\bakkesmodsdk\CMakeLists.txt exit /b 1
+        mkdir C:\bakkesmodsdk\build
+        cd C:\bakkesmodsdk\build
         cmake .. -G Ninja
-        if ($LASTEXITCODE -ne 0) {
-          exit $LASTEXITCODE
-        }
+        if errorlevel 1 exit /b 1
         cmake --build . --config Release
-        if ($LASTEXITCODE -ne 0) {
-          exit $LASTEXITCODE
-        }
-        # Copy the .lib to a predictable location
-        $libSource = "C:\bakkesmodsdk\build\Release\BakkesModPlugin.lib"
-        if (-not (Test-Path $libSource)) {
-          Write-Error "BakkesModPlugin.lib not built at $libSource"
-          exit 1
-        }
-        New-Item -ItemType Directory -Path C:\bakkesmodsdk\lib -Force | Out-Null
-        Copy-Item $libSource C:\bakkesmodsdk\lib\ -Force
-        Write-Host "SDK built successfully."
+        if errorlevel 1 exit /b 1
+        mkdir C:\bakkesmodsdk\lib
+        copy Release\BakkesModPlugin.lib C:\bakkesmodsdk\lib\
+        if errorlevel 1 exit /b 1
 
     - name: Set SDK environment variable
       shell: powershell
@@ -72,33 +54,20 @@ jobs:
         echo "BAKKESMOD_SDK=C:\bakkesmodsdk" | Out-File -FilePath $env:GITHUB_ENV -Append
 
     - name: Verify SDK installation
-      shell: powershell
+      shell: cmd
       run: |
-        $sdk = $env:BAKKESMOD_SDK
-        Write-Host "SDK path: $sdk"
-        if (-not (Test-Path "$sdk\include\bakkesmod\plugin\bakkesmodplugin.h")) {
-          Write-Error "Headers missing – SDK not properly set up."
-          exit 1
-        }
-        if (-not (Test-Path "$sdk\lib\BakkesModPlugin.lib")) {
-          Write-Error "BakkesModPlugin.lib missing – SDK build failed."
-          exit 1
-        }
-        Write-Host "SDK verification passed."
+        if not exist C:\bakkesmodsdk\include\bakkesmod\plugin\bakkesmodplugin.h exit /b 1
+        if not exist C:\bakkesmodsdk\lib\BakkesModPlugin.lib exit /b 1
 
     - name: Build plugin
-      shell: powershell
+      shell: cmd
       run: |
-        New-Item -ItemType Directory -Path build -Force | Out-Null
-        Set-Location build
+        mkdir build
+        cd build
         cmake .. -G Ninja
-        if ($LASTEXITCODE -ne 0) {
-          exit $LASTEXITCODE
-        }
+        if errorlevel 1 exit /b 1
         cmake --build . --config Release
-        if ($LASTEXITCODE -ne 0) {
-          exit $LASTEXITCODE
-        }
+        if errorlevel 1 exit /b 1
 
     - name: Upload Artifact (DLL)
       uses: actions/upload-artifact@v4
