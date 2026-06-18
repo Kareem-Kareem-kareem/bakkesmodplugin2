@@ -19,8 +19,8 @@ jobs:
           cd build
           cmake .. -G Ninja
           cmake --build . --config Release
-          :: Copy the generated .lib to a known location
-          mkdir C:\sdk\lib
+          :: The .lib is built here – copy it to a standard location
+          if not exist C:\sdk\lib mkdir C:\sdk\lib
           copy Release\BakkesModPlugin.lib C:\sdk\lib\
 
       - name: Build plugin
