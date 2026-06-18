@@ -24,40 +24,19 @@ jobs:
     - name: Setup Ninja
       uses: seanmiddleditch/gha-setup-ninja@v4
 
-    - name: Cache BakkesMod SDK (built)
-      id: cache-sdk
-      uses: actions/cache@v3
-      with:
-        path: C:\bakkesmodsdk
-        key: bakkesmod-sdk-v2-${{ runner.os }}
-
-    - name: Build BakkesMod SDK from source (cmd)
-      if: steps.cache-sdk.outputs.cache-hit != 'true'
-      shell: cmd
+    - name: Download BakkesMod SDK (official release)
+      shell: powershell
       run: |
-        if exist C:\bakkesmodsdk rmdir /s /q C:\bakkesmodsdk
-        git clone --depth 1 https://github.com/bakkesmodorg/BakkesModSDK.git C:\bakkesmodsdk
-        if not exist C:\bakkesmodsdk\CMakeLists.txt exit /b 1
-        mkdir C:\bakkesmodsdk\build
-        cd C:\bakkesmodsdk\build
-        cmake .. -G Ninja
-        if errorlevel 1 exit /b 1
-        cmake --build . --config Release
-        if errorlevel 1 exit /b 1
-        mkdir C:\bakkesmodsdk\lib
-        copy Release\BakkesModPlugin.lib C:\bakkesmodsdk\lib\
-        if errorlevel 1 exit /b 1
+        $url = "https://github.com/bakkesmodorg/BakkesModSDK/releases/download/v1.0/sdk.zip"
+        $out = "sdk.zip"
+        Invoke-WebRequest -Uri $url -OutFile $out -UserAgent "Mozilla/5.0"
+        Expand-Archive -Path $out -DestinationPath C:\bakkesmodsdk -Force
+        Remove-Item $out
 
     - name: Set SDK environment variable
       shell: powershell
       run: |
         echo "BAKKESMOD_SDK=C:\bakkesmodsdk" | Out-File -FilePath $env:GITHUB_ENV -Append
-
-    - name: Verify SDK installation
-      shell: cmd
-      run: |
-        if not exist C:\bakkesmodsdk\include\bakkesmod\plugin\bakkesmodplugin.h exit /b 1
-        if not exist C:\bakkesmodsdk\lib\BakkesModPlugin.lib exit /b 1
 
     - name: Build plugin
       shell: cmd
@@ -72,8 +51,8 @@ jobs:
     - name: Upload Artifact (DLL)
       uses: actions/upload-artifact@v4
       with:
-        name: SpawnMiddle
-        path: build/Release/SpawnMiddle.dll
+        name: SimpleGreeter
+        path: build/Release/SimpleGreeter.dll
 
     - name: Upload to Release
       if: github.event_name == 'release'
@@ -82,6 +61,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ github.event.release.upload_url }}
-        asset_path: build/Release/SpawnMiddle.dll
-        asset_name: SpawnMiddle.dll
+        asset_path: build/Release/SimpleGreeter.dll
+        asset_name: SimpleGreeter.dll
         asset_content_type: application/octet-stream
