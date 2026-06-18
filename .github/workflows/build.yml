@@ -10,16 +10,18 @@ jobs:
       - uses: ilammy/msvc-dev-cmd@v1
       - uses: seanmiddleditch/gha-setup-ninja@v4
 
-      - name: Clone BakkesMod SDK
-        shell: pwsh
+      - name: Clone and build BakkesMod SDK
+        shell: cmd
         run: |
           git clone --depth 1 https://github.com/bakkesmodorg/BakkesModSDK.git C:\sdk
-          if (-not (Test-Path "C:\sdk\include\bakkesmod\plugin\bakkesmodplugin.h")) {
-            Write-Error "SDK clone failed - headers missing"
-            exit 1
-          }
-          # The SDK repo doesn't have a pre-built .lib, but we don't need one
-          # for the build to work - the headers are enough for compilation
+          cd C:\sdk
+          mkdir build
+          cd build
+          cmake .. -G Ninja
+          cmake --build . --config Release
+          :: Copy the generated .lib to a known location
+          mkdir C:\sdk\lib
+          copy Release\BakkesModPlugin.lib C:\sdk\lib\
 
       - name: Build plugin
         shell: cmd
