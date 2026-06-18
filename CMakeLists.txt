@@ -7,7 +7,6 @@ set(BAKKESMOD_SDK $ENV{BAKKESMOD_SDK})
 if(NOT BAKKESMOD_SDK)
     set(BAKKESMOD_SDK "C:/sdk")
 endif()
-message(STATUS "Using BakkesMod SDK at: ${BAKKESMOD_SDK}")
 
 include_directories(${BAKKESMOD_SDK}/include)
 link_directories(${BAKKESMOD_SDK}/lib)
