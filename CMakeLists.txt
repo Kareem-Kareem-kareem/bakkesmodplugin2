@@ -3,7 +3,6 @@ project(SpawnMiddle)
 
 set(CMAKE_CXX_STANDARD 17)
 
-# Get SDK path from environment
 set(BAKKESMOD_SDK $ENV{BAKKESMOD_SDK})
 if(NOT BAKKESMOD_SDK)
     set(BAKKESMOD_SDK "C:/path/to/bakkesmodsdk")
@@ -12,7 +11,6 @@ message(STATUS "Using BakkesMod SDK at: ${BAKKESMOD_SDK}")
 
 include_directories(${BAKKESMOD_SDK}/include)
 
-# Search for BakkesModPlugin.lib in common locations
 find_library(BAKKESMOD_PLUGIN_LIB
     NAMES BakkesModPlugin
     PATHS
