@@ -24,41 +24,23 @@ jobs:
       - name: Setup Ninja
         uses: seanmiddleditch/gha-setup-ninja@v4
 
-      - name: Download SDK
+      - name: Run build script
         shell: powershell
-        run: |
-          $urls = @(
-            "https://bakkesmod.com/sdk.zip",
-            "https://github.com/bakkesmodorg/BakkesModSDK/releases/download/v1.0/sdk.zip"
-          )
-          foreach ($url in $urls) {
-            try {
-              Write-Host "Trying $url"
-              Invoke-WebRequest -Uri $url -OutFile sdk.zip -UserAgent "Mozilla/5.0"
-              Expand-Archive -Path sdk.zip -DestinationPath C:\sdk -Force
-              Remove-Item sdk.zip
-              break
-            } catch {
-              Write-Host "Failed, trying next..."
-            }
-          }
-
-      - name: Set SDK env
-        shell: powershell
-        run: echo "BAKKESMOD_SDK=C:\sdk" >> $env:GITHUB_ENV
-
-      - name: Build plugin
-        shell: cmd
-        run: |
-          mkdir build
-          cd build
-          cmake .. -G Ninja
-          if errorlevel 1 exit /b 1
-          cmake --build . --config Release
-          if errorlevel 1 exit /b 1
+        run: .\build.ps1
 
       - name: Upload DLL
         uses: actions/upload-artifact@v4
         with:
           name: SimpleGreeter
           path: build/Release/SimpleGreeter.dll
+
+      - name: Upload to Release
+        if: github.event_name == 'release'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: build/Release/SimpleGreeter.dll
+          asset_name: SimpleGreeter.dll
+          asset_content_type: application/octet-stream
