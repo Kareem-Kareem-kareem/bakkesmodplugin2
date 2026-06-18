@@ -19,9 +19,14 @@ jobs:
           cd build
           cmake .. -G Ninja
           cmake --build . --config Release
-          :: Copy the built library to where CMake expects it
-          if not exist C:\sdk\lib mkdir C:\sdk\lib
-          copy Release\BakkesModPlugin.lib C:\sdk\lib\
+          :: Find the generated .lib and copy it to C:\sdk\lib
+          for /r %%i in (BakkesModPlugin.lib) do copy "%%i" C:\sdk\lib\
+          :: If the above fails, try a direct copy from expected location
+          if not exist C:\sdk\lib\BakkesModPlugin.lib (
+            if exist Release\BakkesModPlugin.lib copy Release\BakkesModPlugin.lib C:\sdk\lib\
+          )
+          :: Verify it exists
+          if not exist C:\sdk\lib\BakkesModPlugin.lib exit /b 1
 
       - name: Build your plugin
         shell: cmd
