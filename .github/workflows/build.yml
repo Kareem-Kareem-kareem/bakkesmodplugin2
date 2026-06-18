@@ -24,7 +24,7 @@ jobs:
       - name: Setup Ninja
         uses: seanmiddleditch/gha-setup-ninja@v4
 
-      - name: Run build script
+      - name: Build plugin
         shell: powershell
         run: .\build.ps1
 
