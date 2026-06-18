@@ -3,6 +3,7 @@ project(SpawnMiddle)
 
 set(CMAKE_CXX_STANDARD 17)
 
+# Use the environment variable set by the workflow
 set(BAKKESMOD_SDK $ENV{BAKKESMOD_SDK})
 if(NOT BAKKESMOD_SDK)
     set(BAKKESMOD_SDK "C:/bakkesmodsdk")
