@@ -1,5 +1,7 @@
 name: Build
-on: push
+
+on: [push, pull_request]
+
 jobs:
   build:
     runs-on: windows-latest
@@ -7,9 +9,43 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ilammy/msvc-dev-cmd@v1
       - uses: seanmiddleditch/gha-setup-ninja@v4
-      - run: ./build.ps1
+
+      - name: Download and extract SDK
         shell: pwsh
-      - uses: actions/upload-artifact@v4
+        run: |
+          $url = "https://github.com/bakkesmodorg/BakkesModSDK/releases/download/v1.0/sdk.zip"
+          Invoke-WebRequest -Uri $url -OutFile sdk.zip -UserAgent "Mozilla/5.0"
+          Expand-Archive -Path sdk.zip -DestinationPath C:\sdk_temp
+          # Find the actual root folder inside
+          $root = Get-ChildItem C:\sdk_temp -Directory | Select-Object -First 1
+          if ($root) {
+            Move-Item "$($root.FullName)\*" C:\sdk -Force
+          } else {
+            Move-Item C:\sdk_temp\* C:\sdk -Force
+          }
+          Remove-Item C:\sdk_temp -Recurse -Force
+          # Verify
+          if (-not (Test-Path C:\sdk\include\bakkesmod\plugin\bakkesmodplugin.h)) {
+            Write-Error "Header missing"
+            exit 1
+          }
+          # Find the .lib (might be in lib/Release/)
+          $lib = Get-ChildItem C:\sdk\lib -Recurse -Filter BakkesModPlugin.lib | Select-Object -First 1
+          if (-not $lib) { Write-Error "Lib missing"; exit 1 }
+          # Ensure it's in C:\sdk\lib
+          New-Item -ItemType Directory -Path C:\sdk\lib -Force | Out-Null
+          Copy-Item $lib.FullName C:\sdk\lib\ -Force
+
+      - name: Build plugin
+        shell: cmd
+        run: |
+          mkdir build
+          cd build
+          cmake .. -G Ninja
+          cmake --build . --config Release
+
+      - name: Upload DLL
+        uses: actions/upload-artifact@v4
         with:
-          name: HelloPlugin
-          path: build/Release/HelloPlugin.dll
+          name: UltraSimple
+          path: build/Release/UltraSimple.dll
