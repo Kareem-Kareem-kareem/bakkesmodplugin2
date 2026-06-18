@@ -29,22 +29,32 @@ jobs:
       uses: actions/cache@v3
       with:
         path: C:\bakkesmodsdk
-        key: bakkesmod-sdk-release
+        key: bakkesmod-sdk-v1
 
-    - name: Download BakkesMod SDK (latest release)
+    - name: Download BakkesMod SDK (direct link from bakkesmod.com)
       if: steps.cache-sdk.outputs.cache-hit != 'true'
       shell: powershell
       run: |
-        # Get the latest release download URL for sdk.zip
-        $release = Invoke-RestMethod -Uri "https://api.github.com/repos/bakkesmodorg/BakkesModSDK/releases/latest"
-        $asset = $release.assets | Where-Object { $_.name -eq "sdk.zip" }
-        if (-not $asset) {
-          Write-Error "sdk.zip not found in the latest release."
+        # Try the official download (might fail, but fallback to a known working mirror)
+        $urls = @(
+          "https://bakkesmod.com/sdk.zip",
+          "https://github.com/bakkesmodorg/BakkesModSDK/releases/download/v1.0/sdk.zip"
+        )
+        $downloaded = $false
+        foreach ($url in $urls) {
+          try {
+            Write-Host "Trying $url"
+            Invoke-WebRequest -Uri $url -OutFile sdk.zip -UserAgent "Mozilla/5.0"
+            $downloaded = $true
+            break
+          } catch {
+            Write-Host "Failed: $_"
+          }
+        }
+        if (-not $downloaded) {
+          Write-Error "All download attempts failed."
           exit 1
         }
-        $url = $asset.browser_download_url
-        Write-Host "Downloading SDK from $url"
-        Invoke-WebRequest -Uri $url -OutFile sdk.zip -UserAgent "Mozilla/5.0"
         Expand-Archive -Path sdk.zip -DestinationPath C:\bakkesmodsdk -Force
         Remove-Item sdk.zip
 
