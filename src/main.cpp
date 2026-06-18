@@ -1,26 +1,26 @@
 #include "bakkesmod/plugin/bakkesmodplugin.h"
 
-class HelloPlugin : public BakkesMod::Plugin::BakkesModPlugin
+class UltraSimple : public BakkesMod::Plugin::BakkesModPlugin
 {
 public:
     void onLoad() override
     {
-        cvarManager->log("HelloPlugin loaded!");
+        cvarManager->log("UltraSimple plugin loaded!");
     }
     void onUnload() override
     {
-        cvarManager->log("HelloPlugin unloaded.");
+        cvarManager->log("UltraSimple plugin unloaded.");
     }
 };
 
 extern "C" __declspec(dllexport) BakkesMod::Plugin::BakkesModPlugin* CreatePlugin()
 {
-    return new HelloPlugin();
+    return new UltraSimple();
 }
 
 extern "C" __declspec(dllexport) const char* GetPluginName()
 {
-    return "HelloPlugin";
+    return "UltraSimple";
 }
 
 extern "C" __declspec(dllexport) unsigned long GetPluginVersion()
