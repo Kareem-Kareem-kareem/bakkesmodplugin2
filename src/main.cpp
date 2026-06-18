@@ -47,9 +47,6 @@ void SpawnMiddle::onEvent(std::string eventName)
     cvarManager->executeCommand("sv_freeplay_spawn " + std::to_string(idx));
 }
 
-// =====================================================================
-// Manual exports – no macro, no guesswork.
-// =====================================================================
 extern "C" __declspec(dllexport) BakkesMod::Plugin::BakkesModPlugin* CreatePlugin()
 {
     return new SpawnMiddle();
