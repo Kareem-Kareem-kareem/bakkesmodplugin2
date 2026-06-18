@@ -13,54 +13,55 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup Visual Studio environment
-      uses: ilammy/msvc-dev-cmd@v1
-      with:
-        arch: x64
+      - name: Setup Visual Studio environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
 
-    - name: Setup Ninja
-      uses: seanmiddleditch/gha-setup-ninja@v4
+      - name: Setup Ninja
+        uses: seanmiddleditch/gha-setup-ninja@v4
 
-    - name: Download BakkesMod SDK (official release)
-      shell: powershell
-      run: |
-        $url = "https://github.com/bakkesmodorg/BakkesModSDK/releases/download/v1.0/sdk.zip"
-        $out = "sdk.zip"
-        Invoke-WebRequest -Uri $url -OutFile $out -UserAgent "Mozilla/5.0"
-        Expand-Archive -Path $out -DestinationPath C:\bakkesmodsdk -Force
-        Remove-Item $out
+      - name: Clone and build BakkesMod SDK (source)
+        shell: cmd
+        run: |
+          git clone --depth 1 https://github.com/bakkesmodorg/BakkesModSDK.git C:\sdk
+          cd C:\sdk
+          mkdir build
+          cd build
+          cmake .. -G Ninja
+          cmake --build . --config Release
+          :: Copy the .lib to a known location
+          mkdir C:\sdk\lib
+          copy Release\BakkesModPlugin.lib C:\sdk\lib\
 
-    - name: Set SDK environment variable
-      shell: powershell
-      run: |
-        echo "BAKKESMOD_SDK=C:\bakkesmodsdk" | Out-File -FilePath $env:GITHUB_ENV -Append
+      - name: Set SDK environment variable
+        shell: cmd
+        run: echo BAKKESMOD_SDK=C:\sdk>>%GITHUB_ENV%
 
-    - name: Build plugin
-      shell: cmd
-      run: |
-        mkdir build
-        cd build
-        cmake .. -G Ninja
-        if errorlevel 1 exit /b 1
-        cmake --build . --config Release
-        if errorlevel 1 exit /b 1
+      - name: Build plugin
+        shell: cmd
+        run: |
+          mkdir build
+          cd build
+          cmake .. -G Ninja
+          cmake --build . --config Release
 
-    - name: Upload Artifact (DLL)
-      uses: actions/upload-artifact@v4
-      with:
-        name: SimpleGreeter
-        path: build/Release/SimpleGreeter.dll
+      - name: Upload DLL
+        uses: actions/upload-artifact@v4
+        with:
+          name: SimpleGreeter
+          path: build/Release/SimpleGreeter.dll
 
-    - name: Upload to Release
-      if: github.event_name == 'release'
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_path: build/Release/SimpleGreeter.dll
-        asset_name: SimpleGreeter.dll
-        asset_content_type: application/octet-stream
+      - name: Upload to Release
+        if: github.event_name == 'release'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: build/Release/SimpleGreeter.dll
+          asset_name: SimpleGreeter.dll
+          asset_content_type: application/octet-stream
