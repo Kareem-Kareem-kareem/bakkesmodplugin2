@@ -1,46 +1,15 @@
-name: Build Plugin
-
-on:
-  push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
-  release:
-    types: [ published ]
-
+name: Build
+on: push
 jobs:
   build:
     runs-on: windows-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Visual Studio
-        uses: ilammy/msvc-dev-cmd@v1
+      - uses: actions/checkout@v4
+      - uses: ilammy/msvc-dev-cmd@v1
+      - uses: seanmiddleditch/gha-setup-ninja@v4
+      - run: ./build.ps1
+        shell: pwsh
+      - uses: actions/upload-artifact@v4
         with:
-          arch: x64
-
-      - name: Setup Ninja
-        uses: seanmiddleditch/gha-setup-ninja@v4
-
-      - name: Build plugin
-        shell: powershell
-        run: .\build.ps1
-
-      - name: Upload DLL
-        uses: actions/upload-artifact@v4
-        with:
-          name: SimpleGreeter
-          path: build/Release/SimpleGreeter.dll
-
-      - name: Upload to Release
-        if: github.event_name == 'release'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: build/Release/SimpleGreeter.dll
-          asset_name: SimpleGreeter.dll
-          asset_content_type: application/octet-stream
+          name: HelloPlugin
+          path: build/Release/HelloPlugin.dll
